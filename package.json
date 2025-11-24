@@ -1,11 +1,14 @@
 {
+  "homepage": "https://joseveji96.github.io/califik",
   "name": "califik",
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "preloyd": "npm run build",
+    "deploy": "gh-pages -d build",
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "react-scripts start",
     "lint": "eslint"
   },
   "dependencies": {
