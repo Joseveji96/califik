@@ -8,10 +8,10 @@ export function generateGradesPDF(student: Student, selectedView: string) {
     const pageHeight = doc.internal.pageSize.height
 
     // Colors
-    const primaryColor = [27, 50, 38] // Navy Blue
-    const accentColor = [200, 200, 200] // Light Gray
-    const tableHeaderColor = [240, 240, 245] // Very Light Gray/Blue
-    const textColor = [40, 40, 40] // Dark Gray
+    const primaryColor: [number, number, number] = [27, 50, 38] // Navy Blue
+    const accentColor: [number, number, number] = [200, 200, 200] // Light Gray
+    const tableHeaderColor: [number, number, number] = [240, 240, 245] // Very Light Gray/Blue
+    const textColor: [number, number, number] = [40, 40, 40] // Dark Gray
 
     // Helper to center text
     const centerText = (text: string, y: number, size: number, font: string = 'helvetica', style: string = 'normal') => {
@@ -194,17 +194,17 @@ export function generateGradesPDF(student: Student, selectedView: string) {
 
                 if (data.column.index === 1) { // Calificación
                     if (numValue < 6) {
-                        data.cell.styles.textColor = [220, 38, 38]; // Red
+                        data.cell.styles.textColor = [220, 38, 38] as [number, number, number]; // Red
                         data.cell.styles.fontStyle = 'bold';
                     } else {
-                        data.cell.styles.textColor = [40, 40, 40];
+                        data.cell.styles.textColor = [40, 40, 40] as [number, number, number];
                     }
                 } else if (data.column.index >= 2 && data.column.index <= 5) { // Metrics
                     if (numValue > 0) {
-                        data.cell.styles.textColor = [220, 38, 38]; // Red
+                        data.cell.styles.textColor = [220, 38, 38] as [number, number, number]; // Red
                         data.cell.styles.fontStyle = 'bold';
                     } else {
-                        data.cell.styles.textColor = [150, 150, 150]; // Light gray for 0
+                        data.cell.styles.textColor = [150, 150, 150] as [number, number, number]; // Light gray for 0
                     }
                 }
             }
