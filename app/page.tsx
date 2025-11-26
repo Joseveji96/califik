@@ -92,7 +92,7 @@ export default function Home() {
                   <span className="italic font-light text-primary/80">Académico</span>
                 </h1>
                 <div className="flex flex-col md:flex-row gap-8 md:items-end animate-reveal-up delay-200">
-                  <p className="max-w-xs text-sm md:text-base font-light leading-relaxed text-muted-foreground text-balance">
+                  <p className="max-w-xl text-sm md:text-base font-light leading-relaxed text-muted-foreground text-balance">
                     Plataforma digital para la consulta segura de expedientes académicos y seguimiento del rendimiento estudiantil.
                   </p>
                   <ArrowDown className="w-6 h-6 animate-bounce opacity-50 hidden md:block" />

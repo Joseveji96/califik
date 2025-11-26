@@ -116,9 +116,12 @@ export default function GradesTable({ student }: GradesTableProps) {
               </p>
             </div>
             <div>
-              <p className="text-xs font-mono uppercase tracking-widest opacity-80 mb-1">Prom. Conducta</p>
-              <p className="font-serif text-xl">
-                {(student.grades.reduce((acc, grade) => acc + grade.conduct, 0) / student.grades.length).toFixed(1)}
+              <p className="text-xs font-mono uppercase tracking-widest opacity-80 mb-1">Conducta</p>
+              <p className={`font-serif text-xl ${student.grades.reduce((acc, grade) => acc + grade.conduct, 0) === 0
+                ? 'text-green-600'
+                : 'text-destructive'
+                }`}>
+                {student.grades.reduce((acc, grade) => acc + grade.conduct, 0)}
               </p>
             </div>
             <div>
@@ -225,8 +228,9 @@ export default function GradesTable({ student }: GradesTableProps) {
                       </div>
                       <div>
                         <p className="text-xs font-mono uppercase tracking-widest opacity-80 mb-1">Conducta</p>
-                        <p className={`text-base font-medium ${grade.conduct < 8 ? 'text-destructive' : ''}`}>
-                          {grade.conduct}/10
+                        <p className={`text-base font-medium ${grade.conduct === 0 ? 'text-base' : 'text-destructive'
+                          }`}>
+                          {grade.conduct === 0 ? 'Excelente' : `${grade.conduct} ${grade.conduct === 1 ? 'incidencia' : 'incidencias'}`}
                         </p>
                       </div>
                     </div>

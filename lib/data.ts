@@ -1,4 +1,4 @@
-import rawData from './CONTROL_ESCOLAR_1ER_NORMALIZADO_promedios_v2.json'
+import rawData from './CONTROL_JSON.json'
 
 export interface Student {
   controlNumber: string
@@ -71,8 +71,7 @@ export const students: Student[] = Object.entries(typedRawData.evaluaciones).map
     let totalAbsences = 0
     let totalDelays = 0
     let totalPending = 0
-    let totalConduct = 0
-    let conductCount = 0
+    let conductIncidents = 0
 
     evaluations.forEach(ev => {
       const trimIdx = ev.trimestre - 1
@@ -82,9 +81,8 @@ export const students: Student[] = Object.entries(typedRawData.evaluaciones).map
       if (ev.faltas) totalAbsences += ev.faltas
       if (ev.retardos) totalDelays += ev.retardos
       if (ev.actividadesPendientes) totalPending += ev.actividadesPendientes
-      if (ev.conducta) {
-        totalConduct += ev.conducta
-        conductCount++
+      if (ev.conducta && ev.conducta > 0) {
+        conductIncidents += ev.conducta
       }
 
 
@@ -110,7 +108,7 @@ export const students: Student[] = Object.entries(typedRawData.evaluaciones).map
       absences: totalAbsences,
       delays: totalDelays,
       pendingActivities: totalPending,
-      conduct: conductCount > 0 ? Number((totalConduct / conductCount).toFixed(1)) : 10
+      conduct: conductIncidents
     }
   })
 
