@@ -49,6 +49,8 @@ interface RawData {
 
 const typedRawData = rawData as RawData
 
+const formatDecimal = (value: number) => Number(value.toFixed(2))
+
 export const students: Student[] = Object.entries(typedRawData.evaluaciones).map(([controlNumber, data]) => {
 
   const subjectsMap = new Map<string, RawEvaluation[]>()
@@ -98,7 +100,7 @@ export const students: Student[] = Object.entries(typedRawData.evaluaciones).map
 
     const validTrimesters = trimesters.filter(t => t.average !== null && t.average > 0)
     const subjectAverage = validTrimesters.length > 0
-      ? Number((validTrimesters.reduce((sum, t) => sum + (t.average || 0), 0) / validTrimesters.length).toFixed(1))
+      ? formatDecimal(validTrimesters.reduce((sum, t) => sum + (t.average || 0), 0) / validTrimesters.length)
       : 0
 
     return {
@@ -115,7 +117,7 @@ export const students: Student[] = Object.entries(typedRawData.evaluaciones).map
 
   const validSubjectAverages = grades.filter(g => g.average > 0).map(g => g.average)
   const generalAverage = validSubjectAverages.length > 0
-    ? Number((validSubjectAverages.reduce((a, b) => a + b, 0) / validSubjectAverages.length).toFixed(1))
+    ? formatDecimal(validSubjectAverages.reduce((a, b) => a + b, 0) / validSubjectAverages.length)
     : 0
 
   return {

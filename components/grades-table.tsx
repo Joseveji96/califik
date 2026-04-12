@@ -87,19 +87,21 @@ export default function GradesTable({ student }: GradesTableProps) {
     }
   }, [totalPending, totalConduct])
 
+  const formatDecimal = (value: number) => Number(value.toFixed(2))
+
   const getDisplayScore = (grade: any, view: string) => {
-    if (view === 'all') return grade.average
+    const formatValue = (value: number | null | undefined) => value == null ? '-' : formatDecimal(value)
+
+    if (view === 'all') return formatValue(grade.average)
 
     const [type, ...rest] = view.split('-')
     const trimesterIndex = parseInt(type.replace('t', '')) - 1
 
     if (rest.length === 0) {
-
-      return grade.trimesters[trimesterIndex]?.average ?? '-'
+      return formatValue(grade.trimesters[trimesterIndex]?.average)
     } else {
-
       const partialIndex = parseInt(rest[0].replace('p', '')) - 1
-      return grade.trimesters[trimesterIndex]?.partials[partialIndex] ?? '-'
+      return formatValue(grade.trimesters[trimesterIndex]?.partials[partialIndex])
     }
   }
 
@@ -209,7 +211,7 @@ export default function GradesTable({ student }: GradesTableProps) {
           <div className="pt-8 border-t border-primary/10">
             <p className="text-sm font-mono uppercase tracking-widest opacity-80 mb-2">Promedio General</p>
             <div className="flex items-baseline gap-2">
-              <span className="text-6xl md:text-7xl font-serif">{student.average}</span>
+              <span className="text-6xl md:text-7xl font-serif">{formatDecimal(student.average)}</span>
               <span className="text-sm font-mono opacity-50">/ 10.0</span>
             </div>
           </div>

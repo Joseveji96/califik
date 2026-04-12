@@ -21,6 +21,8 @@ export function generateGradesPDF(student: Student, selectedView: string) {
         doc.text(text, (pageWidth - textWidth) / 2, y)
     }
 
+    const formatDecimal = (value: number) => Number(value.toFixed(2)).toString()
+
     // Header
     doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2])
     doc.rect(0, 0, pageWidth, 40, 'F')
@@ -104,7 +106,7 @@ export function generateGradesPDF(student: Student, selectedView: string) {
     const col1X = 20
     const col2X = 110
 
-    drawStat('PROMEDIO:', student.average.toString(), col1X, statsY + 8, student.average < 6)
+    drawStat('PROMEDIO:', formatDecimal(student.average), col1X, statsY + 8, student.average < 6)
     drawStat('FALTAS:', totalAbsences.toString(), col1X, statsY + 14, totalAbsences > 0)
 
     drawStat('RETARDOS:', totalDelays.toString(), col2X, statsY + 8, totalDelays > 0)
@@ -118,7 +120,7 @@ export function generateGradesPDF(student: Student, selectedView: string) {
         student.grades.forEach(grade => {
             tableData.push([
                 grade.subject,
-                grade.average.toString(),
+                formatDecimal(grade.average),
                 grade.absences.toString(),
                 grade.delays.toString(),
                 grade.pendingActivities.toString(),
@@ -145,7 +147,7 @@ export function generateGradesPDF(student: Student, selectedView: string) {
             if (gradeValue !== null) {
                 tableData.push([
                     grade.subject,
-                    gradeValue.toString(),
+                    formatDecimal(gradeValue),
                     grade.absences.toString(),
                     grade.delays.toString(),
                     grade.pendingActivities.toString(),

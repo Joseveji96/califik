@@ -40,7 +40,7 @@ export default function TeacherDashboard() {
       selectedStudent.grades = editedGrades
       // Recalculate average
       const sum = editedGrades.reduce((acc, curr) => acc + Number(curr.average), 0)
-      selectedStudent.average = Number((sum / editedGrades.length).toFixed(1))
+      selectedStudent.average = Number((sum / editedGrades.length).toFixed(2))
       setIsEditing(false)
     }
   }
