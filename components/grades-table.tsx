@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { Student } from '@/lib/data'
 import { generateGradesPDF } from '@/lib/pdf-generator'
+import { sileo } from 'sileo'
 
 interface GradesTableProps {
   student: Student
@@ -18,6 +19,73 @@ export default function GradesTable({ student }: GradesTableProps) {
       day: 'numeric'
     }))
   }, [])
+
+  const totalPending = student.grades.reduce((acc, grade) => acc + grade.pendingActivities, 0)
+  const totalConduct = student.grades.reduce((acc, grade) => acc + grade.conduct, 0)
+
+  const getRecommendationMessages = () => {
+    const messages = []
+
+    if (totalConduct > 0) {
+      messages.push(`URGENTE ATENDER: Hay ${totalConduct} casos de indisciplina en las materias marcadas. Por favor, pase a informarse con los docentes para mejorar la conducta y el ambiente de aprendizaje.`)
+    }
+
+    if (totalPending > 0) {
+      if (student.average >= 9) {
+        messages.push(`Felicitamos el esfuerzo, pero se deben atender y completar ${totalPending} actividades para llegar a la EXCELENCIA. ¡Ánimo familia!`)
+      } else if (student.average >= 7) {
+        messages.push(`Buen trabajo general, pero hay ${totalPending} actividades pendientes. Completa las tareas para mantener y mejorar tu promedio. ¡Sigue adelante!`)
+      } else {
+        messages.push(`Es importante completar las ${totalPending} actividades pendientes para mejorar el rendimiento académico. Habla con tus docentes para obtener apoyo. ¡Tú puedes lograrlo!`)
+      }
+    }
+
+    if (messages.length === 0) {
+      if (student.average >= 9) {
+        messages.push(`¡Excelente trabajo! Sigue manteniendo este nivel de excelencia académica. Estamos orgullosos de tu dedicación.`)
+      } else if (student.average >= 7) {
+        messages.push(`Buen rendimiento académico. Con un poco más de esfuerzo y atención en las áreas de oportunidad, puedes alcanzar la excelencia. ¡Sigue así!`)
+      } else {
+        messages.push(`Hay oportunidades de mejora en tu rendimiento. Te recomendamos hablar con los docentes para identificar áreas de apoyo y trabajar juntos en tu progreso académico.`)
+      }
+    }
+
+    return messages
+  }
+
+  useEffect(() => {
+    const descriptions = []
+
+    if (totalConduct > 0) {
+      descriptions.push(`Hay ${totalConduct} casos de indisciplina.`)
+    }
+
+    if (totalPending > 0) {
+      descriptions.push(`Hay ${totalPending} actividades pendientes.`)
+    }
+
+    if (descriptions.length > 0) {
+      sileo.warning({ 
+        title: "Atención requerida", 
+        description: (
+          <div>
+            {descriptions.map((desc, index) => (
+              <div key={index}>{desc}</div>
+            ))}
+          </div>
+        ),
+        position: "bottom-right",
+        duration: 7000
+      })
+    } else {
+      sileo.success({ 
+        title: "¡Excelente rendimiento!", 
+        description: "Todo está en orden. Sigue así.",
+        position: "bottom-right",
+        duration: 5000
+      })
+    }
+  }, [totalPending, totalConduct])
 
   const getDisplayScore = (grade: any, view: string) => {
     if (view === 'all') return grade.average
@@ -145,6 +213,13 @@ export default function GradesTable({ student }: GradesTableProps) {
               <span className="text-sm font-mono opacity-50">/ 10.0</span>
             </div>
           </div>
+
+          <div className="pt-8 border-t border-primary/10">
+            <p className="text-sm font-mono uppercase tracking-widest opacity-80 mb-2">Recomendaciones</p>
+            {getRecommendationMessages().map((message, index) => (
+              <p key={index} className="text-base font-medium leading-relaxed mb-4">{message}</p>
+            ))}
+          </div>
         </div>
 
 
@@ -204,8 +279,9 @@ export default function GradesTable({ student }: GradesTableProps) {
                         <div className="h-px flex-1 bg-primary/10 md:hidden" />
                         <span className={`
                           text-3xl font-serif
-                          ${typeof displayScore === 'number' && displayScore >= 9 ? 'text-primary' :
-                            typeof displayScore === 'number' && displayScore < 6 ? 'text-destructive' : 'opacity-60'}
+                          ${typeof displayScore === 'number' && displayScore >= 8 ? 'text-primary' :
+                            typeof displayScore === 'number' && displayScore < 7 ? 'text-destructive font-bold' :
+                            typeof displayScore === 'number' && displayScore >= 7 && displayScore < 8 ? 'text-orange-500' : 'opacity-60'}
                         `}>
                           {displayScore}
                         </span>
