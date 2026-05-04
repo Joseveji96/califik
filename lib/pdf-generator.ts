@@ -10,7 +10,7 @@ export async function generateGradesPDF(student: Student, selectedView: string) 
     // Load logo image if exists
     let logoImage: string | null = null
     try {
-        const response = await fetch('/images/logocq.jpeg')
+        const response = await fetch('images/logocq.jpeg')
         if (response.ok) {
             const blob = await response.blob()
             logoImage = await new Promise((resolve) => {
@@ -20,7 +20,7 @@ export async function generateGradesPDF(student: Student, selectedView: string) 
             })
         }
     } catch (error) {
-        console.log('No se pudo cargar la imagen del logo')
+        console.log('No se pudo cargar la imagen del logo:', error)
     }
 
     // Colors
