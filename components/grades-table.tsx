@@ -8,7 +8,72 @@ interface GradesTableProps {
 }
 
 export default function GradesTable({ student }: GradesTableProps) {
-  const [selectedView, setSelectedView] = useState<string>('all')
+  const getDefaultView = (student: Student): string => {
+    const partials: { trimIdx: number; type: 'average' | 'p1' | 'p2' }[] = []
+
+    student.grades.forEach(grade => {
+      grade.trimesters.forEach((trimester, trimIdx) => {
+        if (trimester.average !== null) {
+          partials.push({ trimIdx, type: 'average' })
+        }
+        if (trimester.partials[0] !== null) {
+          partials.push({ trimIdx, type: 'p1' })
+        }
+        if (trimester.partials[1] !== null) {
+          partials.push({ trimIdx, type: 'p2' })
+        }
+      })
+    })
+
+    // Remover duplicados por tipo y trimestre
+    const uniquePartials = partials.filter((partial, index, self) =>
+      index === self.findIndex(p => p.trimIdx === partial.trimIdx && p.type === partial.type)
+    )
+
+    if (uniquePartials.length === 0) return 'all'
+    if (uniquePartials.length === 1) {
+      const { trimIdx, type } = uniquePartials[0]
+      if (type === 'average') return `t${trimIdx + 1}`
+      return `t${trimIdx + 1}-p${type === 'p1' ? 1 : 2}`
+    }
+
+    // Para múltiples, ordenar por trimestre desc, luego por prioridad
+    uniquePartials.sort((a, b) => {
+      if (a.trimIdx !== b.trimIdx) return b.trimIdx - a.trimIdx
+      const priority = { average: 3, p2: 2, p1: 1 }
+      return priority[b.type] - priority[a.type]
+    })
+
+    const { trimIdx, type } = uniquePartials[0]
+    if (type === 'average') return `t${trimIdx + 1}`
+    return `t${trimIdx + 1}-p${type === 'p1' ? 1 : 2}`
+  }
+
+  const getTotalPartials = (student: Student): number => {
+    const partialSet = new Set<string>()
+    student.grades.forEach(grade => {
+      grade.trimesters.forEach((trimester, trimIdx) => {
+        if (trimester.average !== null) partialSet.add(`t${trimIdx + 1}-final`)
+        if (trimester.partials[0] !== null) partialSet.add(`t${trimIdx + 1}-p1`)
+        if (trimester.partials[1] !== null) partialSet.add(`t${trimIdx + 1}-p2`)
+      })
+    })
+    return partialSet.size
+  }
+
+  const getLabelForView = (view: string): string => {
+    if (view === 'all') return 'Promedio General'
+    const [type, ...rest] = view.split('-')
+    const t = type.replace('t', '')
+    if (rest.length === 0) {
+      return `Promedio T${t}`
+    } else {
+      const p = rest[0].replace('p', '')
+      return `Parcial ${p}`
+    }
+  }
+
+  const [selectedView, setSelectedView] = useState<string>(() => getDefaultView(student))
   const [currentDate, setCurrentDate] = useState<string>('')
 
   useEffect(() => {
@@ -90,7 +155,7 @@ export default function GradesTable({ student }: GradesTableProps) {
   const formatDecimal = (value: number) => Number(value.toFixed(2))
 
   const getDisplayScore = (grade: any, view: string) => {
-    const formatValue = (value: number | null | undefined) => value == null ? '-' : formatDecimal(value)
+    const formatValue = (value: number | null | undefined) => value == null ? '-' : value.toFixed(2)
 
     if (view === 'all') return formatValue(grade.average)
 
@@ -105,47 +170,62 @@ export default function GradesTable({ student }: GradesTableProps) {
     }
   }
 
-  const availableViews = [
-    { value: 'all', label: 'Promedio General' }
-  ]
+  const getOverallAverage = (view: string): number => {
+    const scores = student.grades
+      .map(grade => getDisplayScore(grade, view))
+      .filter(score => score !== '-')
+      .map(score => parseFloat(score))
 
-  for (let t = 1; t <= 3; t++) {
-    const trimesterIndex = t - 1
-    const hasTrimesterData = student.grades.some(g => g.trimesters[trimesterIndex]?.average !== null || g.trimesters[trimesterIndex]?.partials.some(p => p !== null))
+    if (scores.length === 0) return student.average
+    return formatDecimal(scores.reduce((a, b) => a + b, 0) / scores.length)
+  }
 
-    if (hasTrimesterData) {
-      const options = []
+  const totalPartials = getTotalPartials(student)
 
+  let availableViews: any[] = []
 
-      if (student.grades.some(g => g.trimesters[trimesterIndex]?.average !== null)) {
-        options.push({ value: `t${t}`, label: `Promedio T${t}` })
-      }
+  if (totalPartials === 1) {
+    const view = getDefaultView(student)
+    availableViews = [{ value: view, label: getLabelForView(view) }]
+  } else {
+    availableViews = [{ value: 'all', label: 'Promedio General' }]
 
+    for (let t = 1; t <= 3; t++) {
+      const trimesterIndex = t - 1
+      const hasTrimesterData = student.grades.some((g: any) => g.trimesters[trimesterIndex]?.average !== null || g.trimesters[trimesterIndex]?.partials.some((p: number | null) => p !== null))
 
-      for (let p = 1; p <= 2; p++) {
-        const partialIndex = p - 1
-        if (student.grades.some(g => g.trimesters[trimesterIndex]?.partials[partialIndex] !== null)) {
-          options.push({ value: `t${t}-p${p}`, label: `Parcial ${p}` })
+      if (hasTrimesterData) {
+        const options = []
+
+        if (student.grades.some((g: any) => g.trimesters[trimesterIndex]?.average !== null)) {
+          options.push({ value: `t${t}`, label: `Promedio T${t}` })
         }
-      }
 
-      if (options.length > 0) {
-        availableViews.push({ label: `Trimestre ${t}`, options } as any)
+        for (let p = 1; p <= 2; p++) {
+          const partialIndex = p - 1
+          if (student.grades.some((g: any) => g.trimesters[trimesterIndex]?.partials[partialIndex] !== null)) {
+            options.push({ value: `t${t}-p${p}`, label: `Parcial ${p}` })
+          }
+        }
+
+        if (options.length > 0) {
+          availableViews.push({ label: `Trimestre ${t}`, options } as any)
+        }
       }
     }
   }
 
   const getPeriodText = () => {
-    if (selectedView === 'all') return 'Ciclo 2024-2025'
+    if (selectedView === 'all') return `Ciclo ${student.cycle}`
 
     const [type, ...rest] = selectedView.split('-')
     const trimesterNum = type.replace('t', '')
 
     if (rest.length === 0) {
-      return `Trimestre ${trimesterNum} - Ciclo 2024-2025`
+      return `Trimestre ${trimesterNum} - Ciclo ${student.cycle}`
     } else {
       const partialNum = rest[0].replace('p', '')
-      return `Trimestre ${trimesterNum} - Parcial ${partialNum} - Ciclo 2024-2025`
+      return `Trimestre ${trimesterNum} - Parcial ${partialNum} - Ciclo ${student.cycle}`
     }
   }
 
@@ -211,7 +291,7 @@ export default function GradesTable({ student }: GradesTableProps) {
           <div className="pt-8 border-t border-primary/10">
             <p className="text-sm font-mono uppercase tracking-widest opacity-80 mb-2">Promedio General</p>
             <div className="flex items-baseline gap-2">
-              <span className="text-6xl md:text-7xl font-serif">{formatDecimal(student.average)}</span>
+              <span className="text-6xl md:text-7xl font-serif">{getOverallAverage(selectedView)}</span>
               <span className="text-sm font-mono opacity-50">/ 10.0</span>
             </div>
           </div>
@@ -237,27 +317,35 @@ export default function GradesTable({ student }: GradesTableProps) {
               </div>
 
               <div className="flex items-center gap-2">
-                <label htmlFor="view-select" className="text-base font-mono uppercase tracking-widest opacity-80">
-                  Ver:
-                </label>
-                <select
-                  id="view-select"
-                  value={selectedView}
-                  onChange={(e) => setSelectedView(e.target.value)}
-                  className="bg-transparent border border-primary/20 rounded px-3 py-1 text-base font-medium focus:outline-none focus:border-primary transition-colors max-w-[200px]"
-                >
-                  {availableViews.map((view: any, i) => (
-                    view.options ? (
-                      <optgroup key={i} label={view.label}>
-                        {view.options.map((opt: any) => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                      </optgroup>
-                    ) : (
-                      <option key={view.value} value={view.value}>{view.label}</option>
-                    )
-                  ))}
-                </select>
+                {totalPartials > 1 ? (
+                  <>
+                    <label htmlFor="view-select" className="text-base font-mono uppercase tracking-widest opacity-80">
+                      Ver:
+                    </label>
+                    <select
+                      id="view-select"
+                      value={selectedView}
+                      onChange={(e) => setSelectedView(e.target.value)}
+                      className="bg-transparent border border-primary/20 rounded px-3 py-1 text-base font-medium focus:outline-none focus:border-primary transition-colors max-w-[200px]"
+                    >
+                      {availableViews.map((view: any, i) => (
+                        view.options ? (
+                          <optgroup key={i} label={view.label}>
+                            {view.options.map((opt: any) => (
+                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                          </optgroup>
+                        ) : (
+                          <option key={view.value} value={view.value}>{view.label}</option>
+                        )
+                      ))}
+                    </select>
+                  </>
+                ) : (
+                  <span className="text-base font-mono uppercase tracking-widest opacity-80">
+                    Ver: {getLabelForView(selectedView)}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -281,9 +369,9 @@ export default function GradesTable({ student }: GradesTableProps) {
                         <div className="h-px flex-1 bg-primary/10 md:hidden" />
                         <span className={`
                           text-3xl font-serif
-                          ${typeof displayScore === 'number' && displayScore >= 8 ? 'text-primary' :
-                            typeof displayScore === 'number' && displayScore < 7 ? 'text-destructive font-bold' :
-                            typeof displayScore === 'number' && displayScore >= 7 && displayScore < 8 ? 'text-orange-500' : 'opacity-60'}
+                          ${displayScore !== '-' && parseFloat(displayScore) >= 8 ? 'text-primary' :
+                            displayScore !== '-' && parseFloat(displayScore) < 7 ? 'text-destructive font-bold' :
+                            displayScore !== '-' && parseFloat(displayScore) >= 7 && parseFloat(displayScore) < 8 ? 'text-orange-500' : 'opacity-60'}
                         `}>
                           {displayScore}
                         </span>
@@ -319,7 +407,7 @@ export default function GradesTable({ student }: GradesTableProps) {
 
             <div className="mt-12 flex justify-end gap-4">
               <button
-                onClick={() => generateGradesPDF(student, selectedView)}
+                onClick={async () => await generateGradesPDF(student, selectedView)}
                 className="px-6 py-3 bg-primary text-primary-foreground text-base font-mono uppercase tracking-widest hover:bg-primary/90 transition-colors"
               >
                 Descargar PDF

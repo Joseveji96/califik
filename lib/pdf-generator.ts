@@ -2,10 +2,26 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import type { Student } from './data'
 
-export function generateGradesPDF(student: Student, selectedView: string) {
+export async function generateGradesPDF(student: Student, selectedView: string) {
     const doc = new jsPDF()
     const pageWidth = doc.internal.pageSize.width
     const pageHeight = doc.internal.pageSize.height
+
+    // Load logo image if exists
+    let logoImage: string | null = null
+    try {
+        const response = await fetch('/images/logocq.jpeg')
+        if (response.ok) {
+            const blob = await response.blob()
+            logoImage = await new Promise((resolve) => {
+                const reader = new FileReader()
+                reader.onload = () => resolve(reader.result as string)
+                reader.readAsDataURL(blob)
+            })
+        }
+    } catch (error) {
+        console.log('No se pudo cargar la imagen del logo')
+    }
 
     // Colors
     const primaryColor: [number, number, number] = [27, 50, 38] // Navy Blue
@@ -23,25 +39,49 @@ export function generateGradesPDF(student: Student, selectedView: string) {
 
     const formatDecimal = (value: number) => Number(value.toFixed(2)).toString()
 
+    const getOverallAverage = (student: Student, view: string): number => {
+        const scores = student.grades
+            .map(grade => {
+                if (view === 'all') return grade.average
+                const [type, ...rest] = view.split('-')
+                const trimesterIndex = parseInt(type.replace('t', '')) - 1
+                if (rest.length === 0) {
+                    return grade.trimesters[trimesterIndex]?.average || null
+                } else {
+                    const partialIndex = parseInt(rest[0].replace('p', '')) - 1
+                    return grade.trimesters[trimesterIndex]?.partials[partialIndex] || null
+                }
+            })
+            .filter(score => score != null)
+            .map(score => score)
+        if (scores.length === 0) return student.average
+        return parseFloat(formatDecimal(scores.reduce((a, b) => a + b, 0) / scores.length))
+    }
+
     // Header
     doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2])
     doc.rect(0, 0, pageWidth, 40, 'F')
 
+    // Add logo if available
+    if (logoImage) {
+        doc.addImage(logoImage, 'JPEG', 20, 5, 30, 30)
+    }
+
     doc.setTextColor(255, 255, 255)
     doc.setFont('times', 'bold')
     doc.setFontSize(18)
-    doc.text('ESC. SEC. TEC. NO°9', 20, 18)
+    doc.text('ESC. SEC. TEC. NO°9', logoImage ? 60 : 20, 18)
 
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(10)
-    doc.text('REPORTE OFICIAL DE CALIFICACIONES', 20, 26)
+    doc.text('REPORTE OFICIAL DE CALIFICACIONES', logoImage ? 60 : 20, 26)
 
     // Date and Period in Header
     doc.setFontSize(9)
     const dateStr = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })
     const periodText = selectedView === 'all'
-        ? 'Ciclo Escolar 2024-2025'
-        : selectedView.replace('t', 'Trimestre ').replace('p', ' - Parcial ').replace('-', ' ') + ' - Ciclo 2024-2025'
+        ? `Ciclo Escolar ${student.cycle}`
+        : selectedView.replace('t', 'Trimestre ').replace('p', ' - Parcial ').replace('-', ' ') + ` - Ciclo ${student.cycle}`
 
     const dateWidth = doc.getTextWidth(dateStr)
     doc.text(dateStr, pageWidth - 20 - dateWidth, 18)
@@ -106,7 +146,7 @@ export function generateGradesPDF(student: Student, selectedView: string) {
     const col1X = 20
     const col2X = 110
 
-    drawStat('PROMEDIO:', formatDecimal(student.average), col1X, statsY + 8, student.average < 6)
+    drawStat('PROMEDIO:', formatDecimal(getOverallAverage(student, selectedView)), col1X, statsY + 8, getOverallAverage(student, selectedView) < 6)
     drawStat('FALTAS:', totalAbsences.toString(), col1X, statsY + 14, totalAbsences > 0)
 
     drawStat('RETARDOS:', totalDelays.toString(), col2X, statsY + 8, totalDelays > 0)

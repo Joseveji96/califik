@@ -5,6 +5,7 @@ export interface Student {
   name: string
   group: string
   grade: number
+  cycle: string
   average: number
   grades: Grade[]
 }
@@ -125,6 +126,7 @@ export const students: Student[] = Object.entries(typedRawData.evaluaciones).map
     name: data.nombre || 'Sin Nombre',
     group: data.grupo || '',
     grade: data.grado || 0,
+    cycle: data.evaluaciones[0]?.ciclo || 'Sin Ciclo',
     average: generalAverage,
     grades
   }
